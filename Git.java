@@ -14,17 +14,22 @@ public class Git {
     }
     public static void initializeRepo (String repoName) throws IOException{
         File repo = new File ("./" + repoName);
-        if (!repo.exists())
-            repo.mkdir();
         File git = new File ("./" + repoName + "/git/objects");
-        if (!git.exists() )
-            git.mkdirs();
-        Path indexPath = Paths.get("./" + repoName + "/git/index");
-        Files.createFile (indexPath);
         File index = new File ("./" + repoName + "/git/index");
         if (repo.exists() && git.exists() && index.exists()){
             System.out.println("Git Repository already exists");
+            return;
         }
+        if (!repo.exists())
+            repo.mkdir();
+        if (!git.exists())
+            git.mkdirs();
+        Path indexPath = Paths.get("./" + repoName + "/git/index");
+        Files.createFile (indexPath);
+    }
+    
+    public static void deleteRepo (String repoName) throws IOException{
+
     }
     public static void blob ( ){
 
