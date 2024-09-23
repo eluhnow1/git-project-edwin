@@ -7,9 +7,14 @@ import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.*;
 
 public class Git {
     public static void main (String [] args) throws IOException, NoSuchAlgorithmException {
+        testInitialization();
+        deleteRepo("seansTestRepo");
+    }
+    public static void testInitialization () throws IOException {
         initializeRepo("seansTestRepo");
         System.out.println("^ Should say that the repo already exists");
         Path indexPath = Paths.get("./seansTestRepo/git/index");
@@ -36,13 +41,38 @@ public class Git {
         }
         System.out.println("Repo '" + repoName + "' was initialized successfully");
     }
-    
     public static void deleteRepo (String repoName) throws IOException{
-
+        File repoToDelete = new File ("./" + repoName);
+        deleteDir (repoToDelete);
+        repoToDelete.delete();
+        if (!repoToDelete.exists())
+            System.out.println("Repo '" + repoName + "' was removed successfully");
     }
+    
+    private static void deleteDir (File file) throws IOException{
+        if(file.exists() && file.isDirectory()){
+            File [] files = file.listFiles();
+            if (files.length > 0){
+                for (int i = 0; i < files.length; i ++){
+                    if (files[i].isDirectory()){
+                        deleteDir(files[i]);
+                        files[i].delete();
+                    }
+                    else{
+                        files[i].delete();
+                    }
+                }
+            }
+        }
+        else{
+            System.out.println("Could not delete directory");
+        }
+    }
+
     public static void blob ( ){
 
     }
+
     public static String sha1Code(String filePath) throws IOException, NoSuchAlgorithmException {
         FileInputStream fileInputStream = new FileInputStream(filePath);
         MessageDigest digest = MessageDigest.getInstance("SHA-1");
