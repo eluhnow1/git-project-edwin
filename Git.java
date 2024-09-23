@@ -11,6 +11,12 @@ import java.security.NoSuchAlgorithmException;
 public class Git {
     public static void main (String [] args) throws IOException, NoSuchAlgorithmException {
         initializeRepo("seansTestRepo");
+        System.out.println("^ Should say that the repo already exists");
+        Path indexPath = Paths.get("./seansTestRepo/git/index");
+        Files.deleteIfExists(indexPath);
+        System.out.println("...deleted index file, now trying to initialize the same repo...");
+        initializeRepo("seansTestRepo");
+        System.out.println("^ Should say that the repo was initialized successfully.");
     }
     public static void initializeRepo (String repoName) throws IOException{
         File repo = new File ("./" + repoName);
@@ -24,8 +30,11 @@ public class Git {
             repo.mkdir();
         if (!git.exists())
             git.mkdirs();
-        Path indexPath = Paths.get("./" + repoName + "/git/index");
-        Files.createFile (indexPath);
+        if (!index.exists()){
+            Path indexPath = Paths.get("./" + repoName + "/git/index");
+            Files.createFile (indexPath);
+        }
+        System.out.println("Repo '" + repoName + "' was initialized successfully");
     }
     
     public static void deleteRepo (String repoName) throws IOException{
