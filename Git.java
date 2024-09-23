@@ -44,11 +44,10 @@ public class Git {
     public static void deleteRepo (String repoName) throws IOException{
         File repoToDelete = new File ("./" + repoName);
         deleteDir (repoToDelete);
-        repoToDelete.delete();
         if (!repoToDelete.exists())
             System.out.println("Repo '" + repoName + "' was removed successfully");
     }
-    
+
     private static void deleteDir (File file) throws IOException{
         if(file.exists() && file.isDirectory()){
             File [] files = file.listFiles();
@@ -63,6 +62,7 @@ public class Git {
                     }
                 }
             }
+            file.delete();
         }
         else{
             System.out.println("Could not delete directory");
