@@ -3,11 +3,13 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.security.*;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.io.FileReader;
+import java.io.FileWriter;
 
 public class Git {
     public static void main (String [] args) throws IOException, NoSuchAlgorithmException {
@@ -72,15 +74,44 @@ public class Git {
     }
     
     public static void makeBlob (File file, String repoName) throws IOException, NoSuchAlgorithmException{
-        if(repoExists(repoName)){
-            File newCommit = new File ("./" + repoName + "/git/objects/" + sha1Code(file.getPath()));
-            Path newCommitPath = Paths.get(newCommit.getPath());
-            Files.createFile(newCommitPath);
-            FileReader reader = new FileReader(newCommit);
-        }
-        else{
+        if(!repoExists(repoName)){
             System.out.println("Repository '" + repoName + "' does not exist");
+            return;
         }
+        //creating hash-file in objects folder and copying data from fileToCommit
+        String hash = sha1Code(file.getPath());
+        File newCommit = new File ("./" + repoName + "/git/objects/" + hash);
+        Path newCommitPath = Paths.get(newCommit.getPath());
+        Files.createFile(newCommitPath);
+        /*   implimentation for bytes and not just chars using fileStreams
+
+
+        FileInputStream fis = new FileInputStream(file);
+        FileOutputStream fos = new FileOutputStream(newCommit);
+        int n;
+        while ((n=fis.read()) != -1){
+            fos.write(n);
+        }
+        fis.close();
+        fos.close();
+
+
+        */
+        FileReader fr = new FileReader (file);
+        FileWriter fw = new FileWriter (newCommit);
+        int c;
+        while ((c = fr.read()) != -1){   // while there is more to read...
+            fw.write(c);
+        }
+        fr.close();
+        fw.close();
+        //updating index file in repo
+        File indexFile = new File ("./" + repoName + "/git/index");
+        updateIndexFile(indexFile, hash, file.getName());
+    }
+    private static void updateIndexFile (File indexFile, String hash, String fileName) throws IOException{
+        FileWriter fw = new FileWriter(indexFile);
+        fw.write("\n" + hash + " " + fileName);
     }
     private static boolean repoExists (String repoName){
         File repo = new File ("./" + repoName);
