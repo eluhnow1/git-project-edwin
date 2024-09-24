@@ -3,16 +3,15 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.security.*;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.io.FileReader;
 
 public class Git {
     public static void main (String [] args) throws IOException, NoSuchAlgorithmException {
-        testInitialization();
-        deleteRepo("seansTestRepo");
+        System.out.println(sha1Code("./example.txt"));
     }
     public static void testInitialization () throws IOException {
         initializeRepo("seansTestRepo");
@@ -25,16 +24,19 @@ public class Git {
     }
     public static void initializeRepo (String repoName) throws IOException{
         File repo = new File ("./" + repoName);
-        File git = new File ("./" + repoName + "/git/objects");
+        File git = new File ("./" + repoName + "/git");
+        File objects = new File ("./" + repoName + "/git/objects");
         File index = new File ("./" + repoName + "/git/index");
-        if (repo.exists() && git.exists() && index.exists()){
+        if (repo.exists() && git.exists() && objects.exists() && index.exists()){
             System.out.println("Git Repository already exists");
             return;
         }
         if (!repo.exists())
             repo.mkdir();
         if (!git.exists())
-            git.mkdirs();
+            git.mkdir();
+        if (!objects.exists())
+            objects.mkdir();
         if (!index.exists()){
             Path indexPath = Paths.get("./" + repoName + "/git/index");
             Files.createFile (indexPath);
@@ -68,11 +70,25 @@ public class Git {
             System.out.println("Could not delete directory");
         }
     }
-
-    public static void blob ( ){
-
+    
+    public static void makeBlob (File file, String repoName) throws IOException, NoSuchAlgorithmException{
+        if(repoExists(repoName)){
+            File newCommit = new File ("./" + repoName + "/git/objects/" + sha1Code(file.getPath()));
+            Path newCommitPath = Paths.get(newCommit.getPath());
+            Files.createFile(newCommitPath);
+            FileReader reader = new FileReader(newCommit);
+        }
+        else{
+            System.out.println("Repository '" + repoName + "' does not exist");
+        }
     }
-
+    private static boolean repoExists (String repoName){
+        File repo = new File ("./" + repoName);
+        File git = new File ("./" + repoName + "/git");
+        File objects = new File ("./" + repoName + "/git/objects");
+        File index = new File ("./" + repoName + "/git/index");
+        return (repo.exists() && git.exists() && objects.exists() && index.exists());
+    }
     public static String sha1Code(String filePath) throws IOException, NoSuchAlgorithmException {
         FileInputStream fileInputStream = new FileInputStream(filePath);
         MessageDigest digest = MessageDigest.getInstance("SHA-1");
@@ -83,6 +99,7 @@ public class Git {
 
 //      digest = digestInputStream.getMessageDigest();
         byte[] resultByteArry = digest.digest();
+        digestInputStream.close();
         return bytesToHexString(resultByteArry);
     }
 
