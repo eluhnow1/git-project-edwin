@@ -3,32 +3,26 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.security.*;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.zip.*;
 import java.io.FileReader;
 import java.io.FileWriter;
 
 public class Git {
-    public static void main (String [] args) throws IOException, NoSuchAlgorithmException {
-        System.out.println(sha1Code("./example.txt"));
-    }
-    public static void testInitialization () throws IOException {
-        initializeRepo("seansTestRepo");
-        System.out.println("^ Should say that the repo already exists");
-        Path indexPath = Paths.get("./seansTestRepo/git/index");
-        Files.deleteIfExists(indexPath);
-        System.out.println("...deleted index file, now trying to initialize the same repo...");
-        initializeRepo("seansTestRepo");
-        System.out.println("^ Should say that the repo was initialized successfully.");
-    }
-    public static void initializeRepo (String repoName) throws IOException{
-        File repo = new File ("./" + repoName);
-        File git = new File ("./" + repoName + "/git");
-        File objects = new File ("./" + repoName + "/git/objects");
-        File index = new File ("./" + repoName + "/git/index");
+    private String repoName;
+    private File repo, git, objects, index;
+    public boolean zipToggle = false;
+    public Git (String repoName) throws IOException{
+        this.repoName = repoName;
+        repo = new File ("./" + repoName);
+        git = new File ("./" + repoName + "/git");
+        objects = new File ("./" + repoName + "/git/objects");
+        index = new File ("./" + repoName + "/git/index");
         if (repo.exists() && git.exists() && objects.exists() && index.exists()){
             System.out.println("Git Repository already exists");
             return;
@@ -45,7 +39,8 @@ public class Git {
         }
         System.out.println("Repo '" + repoName + "' was initialized successfully");
     }
-    public static void deleteRepo (String repoName) throws IOException{
+    
+    public void deleteRepo (String repoName) throws IOException{
         File repoToDelete = new File ("./" + repoName);
         deleteDir (repoToDelete);
         if (!repoToDelete.exists())
@@ -73,16 +68,23 @@ public class Git {
         }
     }
     
-    public static void makeBlob (File file, String repoName) throws IOException, NoSuchAlgorithmException{
-        if(!repoExists(repoName)){
-            System.out.println("Repository '" + repoName + "' does not exist");
-            return;
-        }
+    public void makeBlob (File file) throws IOException, NoSuchAlgorithmException{
         //creating hash-file in objects folder and copying data from fileToCommit
-        String hash = sha1Code(file.getPath());
+        if (!file.exists())
+            throw new FileNotFoundException();
+        File finalFile;
+        if (zipToggle){
+            finalFile = zipFile(file);
+        }
+        else
+            finalFile = file;
+        String hash = sha1Code(finalFile.getPath());
         File newCommit = new File ("./" + repoName + "/git/objects/" + hash);
         Path newCommitPath = Paths.get(newCommit.getPath());
-        Files.createFile(newCommitPath);
+        if(!newCommit.exists())
+            Files.createFile(newCommitPath);
+        else
+            return;
         /*   implimentation for bytes and not just chars using fileStreams
 
 
@@ -97,7 +99,7 @@ public class Git {
 
 
         */
-        FileReader fr = new FileReader (file);
+        FileReader fr = new FileReader (finalFile);
         FileWriter fw = new FileWriter (newCommit);
         int c;
         while ((c = fr.read()) != -1){   // while there is more to read...
@@ -109,16 +111,33 @@ public class Git {
         File indexFile = new File ("./" + repoName + "/git/index");
         updateIndexFile(indexFile, hash, file.getName());
     }
-    private static void updateIndexFile (File indexFile, String hash, String fileName) throws IOException{
+    private void updateIndexFile (File indexFile, String hash, String fileName) throws IOException{
         FileWriter fw = new FileWriter(indexFile);
         fw.write("\n" + hash + " " + fileName);
     }
-    private static boolean repoExists (String repoName){
-        File repo = new File ("./" + repoName);
-        File git = new File ("./" + repoName + "/git");
-        File objects = new File ("./" + repoName + "/git/objects");
-        File index = new File ("./" + repoName + "/git/index");
-        return (repo.exists() && git.exists() && objects.exists() && index.exists());
+    public void setZipToggle (boolean b){
+        zipToggle = b;
+    }
+    private File zipFile (File file) throws IOException, ZipException{
+        File outputFile = new File(file.getName() + ".zip");
+        final int BUFFER_SIZE = 4096;
+        FileInputStream fis = new FileInputStream(file);
+        FileOutputStream fos = new FileOutputStream(outputFile);
+        ZipOutputStream zos = new ZipOutputStream(fos);
+        ZipEntry zipEntry = new ZipEntry(file.getName());
+        zos.putNextEntry(zipEntry);
+
+        byte[] buffer = new byte[BUFFER_SIZE];
+        int bytesRead;
+
+        // Read the file and write it to the ZipOutputStream
+        while ((bytesRead = fis.read(buffer)) != -1) {
+            zos.write(buffer, 0, bytesRead);
+        }
+
+        // Close the current ZipEntry
+        zos.closeEntry();
+        return outputFile;
     }
     public static String sha1Code(String filePath) throws IOException, NoSuchAlgorithmException {
         FileInputStream fileInputStream = new FileInputStream(filePath);
