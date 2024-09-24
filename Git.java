@@ -1,5 +1,6 @@
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.*;
 import java.security.*;
 import java.io.FileInputStream;
@@ -39,32 +40,41 @@ public class Git {
         }
         System.out.println("Repo '" + repoName + "' was initialized successfully");
     }
-    
-    public void deleteRepo (String repoName) throws IOException{
+    public File getIndex (){
+        return index;
+    }
+    public void deleteRepo () throws IOException{
         File repoToDelete = new File ("./" + repoName);
         deleteDir (repoToDelete);
+        repoToDelete.delete();
         if (!repoToDelete.exists())
             System.out.println("Repo '" + repoName + "' was removed successfully");
     }
 
     private static void deleteDir (File file) throws IOException{
-        if(file.exists() && file.isDirectory()){
-            File [] files = file.listFiles();
-            if (files.length > 0){
-                for (int i = 0; i < files.length; i ++){
-                    if (files[i].isDirectory()){
-                        deleteDir(files[i]);
-                        files[i].delete();
+        if (file.exists() && file.isDirectory()) {
+            File[] files = file.listFiles();            
+            if (files != null && files.length > 0) {
+                for (File f : files) {
+                    if (f.isDirectory()) {
+                        deleteDir(f);
                     }
                     else{
-                        files[i].delete();
+                        PrintWriter pw = new PrintWriter(f);
+                        pw.write("");
+                        pw.close();
+                        if (!f.delete()){
+                            throw new IOException("faled to delete file: " + f.getPath());
+                        }
                     }
                 }
+            }            
+            if (!file.delete()) {
+                throw new IOException("Failed to delete directory: " + file.getPath());
             }
-            file.delete();
-        }
-        else{
-            System.out.println("Could not delete directory");
+        } 
+        else {
+            System.out.println("Could not delete directory: either it does not exist or is not a directory.");
         }
     }
     
@@ -72,6 +82,7 @@ public class Git {
         //creating hash-file in objects folder and copying data from fileToCommit
         if (!file.exists())
             throw new FileNotFoundException();
+        //determining whether to compress or not
         File finalFile;
         if (zipToggle){
             finalFile = zipFile(file);
@@ -102,23 +113,24 @@ public class Git {
         FileReader fr = new FileReader (finalFile);
         FileWriter fw = new FileWriter (newCommit);
         int c;
-        while ((c = fr.read()) != -1){   // while there is more to read...
+        while ((c = fr.read()) != -1){
             fw.write(c);
         }
         fr.close();
         fw.close();
         //updating index file in repo
         File indexFile = new File ("./" + repoName + "/git/index");
-        updateIndexFile(indexFile, hash, file.getName());
+        updateIndexFile(indexFile, hash, finalFile.getName());
     }
     private void updateIndexFile (File indexFile, String hash, String fileName) throws IOException{
-        FileWriter fw = new FileWriter(indexFile);
-        fw.write("\n" + hash + " " + fileName);
+        FileWriter fw = new FileWriter(indexFile, true);
+        fw.write(hash + " " + fileName + "\n");
+        fw.close();
     }
     public void setZipToggle (boolean b){
         zipToggle = b;
     }
-    public File zipFile (File file) throws IOException, ZipException{
+    private File zipFile (File file) throws IOException, ZipException{
         if (!file.exists())
             throw new FileNotFoundException();
         File outputFile = new File(file.getName() + ".zip");
@@ -127,6 +139,7 @@ public class Git {
         FileOutputStream fos = new FileOutputStream(outputFile);
         ZipOutputStream zos = new ZipOutputStream(fos);
         ZipEntry zipEntry = new ZipEntry(file.getName());
+        zipEntry.setTime(0);
         zos.putNextEntry(zipEntry);
 
         byte[] buffer = new byte[BUFFER_SIZE];
@@ -139,6 +152,8 @@ public class Git {
 
         // Close the current ZipEntry
         zos.closeEntry();
+        fis.close();
+        fos.close();
         return outputFile;
     }
     public static String sha1Code(String filePath) throws IOException, NoSuchAlgorithmException {
@@ -149,7 +164,7 @@ public class Git {
         // read all file content
         while (digestInputStream.read(bytes) > 0);
 
-//      digest = digestInputStream.getMessageDigest();
+        digest = digestInputStream.getMessageDigest();
         byte[] resultByteArry = digest.digest();
         digestInputStream.close();
         return bytesToHexString(resultByteArry);
@@ -164,7 +179,7 @@ public class Git {
      * @param bytes array of byte
      * @return hex String represent the array of byte
      */
-    public static String bytesToHexString(byte[] bytes) {
+    private static String bytesToHexString(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
             int value = b & 0xFF;
