@@ -118,7 +118,9 @@ public class Git {
     public void setZipToggle (boolean b){
         zipToggle = b;
     }
-    private File zipFile (File file) throws IOException, ZipException{
+    public File zipFile (File file) throws IOException, ZipException{
+        if (!file.exists())
+            throw new FileNotFoundException();
         File outputFile = new File(file.getName() + ".zip");
         final int BUFFER_SIZE = 4096;
         FileInputStream fis = new FileInputStream(file);
