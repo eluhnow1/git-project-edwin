@@ -48,6 +48,7 @@ public class gitTester {
         File compressedFile = new File ("./seansTestRepo/git/objects/" + seansGit2.sha1Code("./example.txt.zip"));
         System.out.println("\n The size of the uncompressed file is: " + hashFile.length() + " bytes. The length of the compressed file is: " + compressedFile.length() + " bytes.");
         freader.close();
+        seansGit2 = resetTestFiles(seansGit2);
         testFolderCompatibility(seansGit2);
         seansGit2.deleteRepo();
     }
@@ -68,7 +69,7 @@ public class gitTester {
         }
         fr.close();
         System.out.println("\nNumber of blobs in objects folder: " + (new File("./seansRepo/git/objects").list().length));
-        System.out.println("Number of blobs expected in objects folder: 7");
+        System.out.println("Number of blobs expected in objects folder: 5");
     }
 
 }
