@@ -80,7 +80,7 @@ public class Git {
     
     public void makeBlob (File file) throws IOException, NoSuchAlgorithmException{
         //creating hash-file in objects folder and copying data from fileToCommit
-        if (!file.exists())
+        if (!file.exists() || file.isDirectory())
             throw new FileNotFoundException();
         //determining whether to compress or not
         File finalFile;
@@ -120,11 +120,73 @@ public class Git {
         fw.close();
         //updating index file in repo
         File indexFile = new File ("./" + repoName + "/git/index");
-        updateIndexFile(indexFile, hash, finalFile.getName());
+        updateIndexFile(indexFile, hash, finalFile);
     }
-    private void updateIndexFile (File indexFile, String hash, String fileName) throws IOException{
+    public void makeTree(File directory) throws IOException, NoSuchAlgorithmException {
+        if (!directory.exists() || !directory.isDirectory()) {
+            throw new FileNotFoundException("Directory not found: " + directory.getPath());
+        }
+        //Gets the folder contents
+        StringBuilder treeContentsBuilder = new StringBuilder();
+        for (File file : Objects.requireNonNull(directory.listFiles())) {
+            treeContentsBuilder.append(file.getName()).append(" ");
+        }
+        String treeContents = treeContentsBuilder.toString().trim();
+        //Convert the contents to a temporary file
+        File tempFile = new File("./" + repoName + "/git/objects/tempTree.txt");
+        FileWriter fw = new FileWriter(tempFile);
+        fw.write(treeContents);
+        fw.close();
+        //Optionally compress the file
+        if (zipToggle) {
+            tempFile = zipFile(tempFile);
+        }
+        //Calculate SHA1 hash of the file
+        String treeHash = sha1Code(tempFile.getPath());
+        
+        //Adds the folder file to objects
+        File newCommit = new File ("./" + repoName + "/git/objects/" + treeHash);
+        if(!newCommit.exists())
+            Files.createFile(Paths.get(newCommit.getPath()));
+        else
+            return;
+        //Writes content into git folder file
+        FileReader fr = new FileReader (tempFile);
+        fw = new FileWriter (newCommit);
+        int c;
+        while ((c = fr.read()) != -1){
+            fw.write(c);
+        }
+        fr.close();
+        fw.close();
+        //deletes the temp file
+        System.out.println("Deleting file: " + tempFile.getAbsolutePath());
+        if (!tempFile.delete()) {
+            System.err.println("Failed to delete temp file: " + tempFile.getPath());
+        }
+        
+        //Adds the tree information to the index file
+        updateIndexFile(index, treeHash, directory);
+
+        //Traverse all files in the directory recursively
+        for (File file : directory.listFiles()) {
+            if (file.isDirectory()) {
+                makeTree(file);//recursive call
+            } 
+            else {
+                makeBlob(file);//makes a blob for the files
+            }
+        }
+    }
+
+    
+    private void updateIndexFile (File indexFile, String hash, File finalFile) throws IOException{
         FileWriter fw = new FileWriter(indexFile, true);
-        fw.write(hash + " " + fileName + "\n");
+        String fileType = "blob";
+        if (finalFile.isDirectory()) {
+            fileType = "tree";
+        }
+        fw.write(fileType + " " + hash + " " + finalFile.getPath() + "\n");
         fw.close();
     }
     public void setZipToggle (boolean b){

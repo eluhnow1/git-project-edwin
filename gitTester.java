@@ -1,20 +1,8 @@
 import java.nio.file.*;
 import java.io.IOException;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.*;
-import java.security.*;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
-import java.util.zip.*;
 import java.io.FileReader;
-import java.io.FileWriter;
 
 
 public class gitTester {
@@ -60,11 +48,27 @@ public class gitTester {
         File compressedFile = new File ("./seansTestRepo/git/objects/" + seansGit2.sha1Code("./example.txt.zip"));
         System.out.println("\n The size of the uncompressed file is: " + hashFile.length() + " bytes. The length of the compressed file is: " + compressedFile.length() + " bytes.");
         freader.close();
+        testFolderCompatibility(seansGit2);
         seansGit2.deleteRepo();
     }
     public static Git resetTestFiles (Git git) throws IOException{
         git.deleteRepo();
         return new Git("seansRepo");
+    }
+    private static void testFolderCompatibility(Git gitName) throws NoSuchAlgorithmException, IOException {
+        System.out.println("\n\n\n******************************** Testing compatibility with non-empty directories ***************************\n\n");
+        gitName.setZipToggle(false);
+        File testPath = new File ("./testFolder");
+        gitName.makeTree(testPath);
+        File index = new File ("./seansRepo/git/index");
+        FileReader fr = new FileReader (index);
+        System.out.print("\nIndex file contents after attempted tree creation:");
+        while (fr.ready()){
+            System.out.print((char)fr.read());
+        }
+        fr.close();
+        System.out.println("\nNumber of blobs in objects folder: " + (new File("./seansRepo/git/objects").list().length));
+        System.out.println("Number of blobs expected in objects folder: 5");
     }
 
 }
