@@ -122,14 +122,20 @@ public class Git {
         File indexFile = new File ("./" + repoName + "/git/index");
         updateIndexFile(indexFile, hash, finalFile);
     }
-    public void makeTree(File directory) throws IOException, NoSuchAlgorithmException {
+    public String makeTree(File directory) throws IOException, NoSuchAlgorithmException {
         if (!directory.exists() || !directory.isDirectory()) {
             throw new FileNotFoundException("Directory not found: " + directory.getPath());
         }
-        //Gets the folder contents
+        //Gets the tree index contents
         StringBuilder treeContentsBuilder = new StringBuilder();
         for (File file : Objects.requireNonNull(directory.listFiles())) {
-            treeContentsBuilder.append(file.getName()).append(" ");
+            if (file.isDirectory()) {
+                treeContentsBuilder.append("tree " + makeTree(file) +  " " +file.getName() + "\n");
+            }
+            else {
+                makeBlob(file);
+                treeContentsBuilder.append("blob " + sha1Code(file.getPath()) +  " " +file.getName() + "\n");
+            }
         }
         String treeContents = treeContentsBuilder.toString().trim();
         //Convert the contents to a temporary file
@@ -148,8 +154,6 @@ public class Git {
         File newCommit = new File ("./" + repoName + "/git/objects/" + treeHash);
         if(!newCommit.exists())
             Files.createFile(Paths.get(newCommit.getPath()));
-        else
-            return;
         //Writes content into git folder file
         FileReader fr = new FileReader (tempFile);
         fw = new FileWriter (newCommit);
@@ -167,16 +171,7 @@ public class Git {
         
         //Adds the tree information to the index file
         updateIndexFile(index, treeHash, directory);
-
-        //Traverse all files in the directory recursively
-        for (File file : directory.listFiles()) {
-            if (file.isDirectory()) {
-                makeTree(file);//recursive call
-            } 
-            else {
-                makeBlob(file);//makes a blob for the files
-            }
-        }
+        return treeHash;
     }
 
     

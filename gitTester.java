@@ -68,7 +68,7 @@ public class gitTester {
         }
         fr.close();
         System.out.println("\nNumber of blobs in objects folder: " + (new File("./seansRepo/git/objects").list().length));
-        System.out.println("Number of blobs expected in objects folder: 5");
+        System.out.println("Number of blobs expected in objects folder: 7");
     }
 
 }
