@@ -15,6 +15,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 
 public class Git {
+    //Collin's first commit
     private String repoName;
     private File repo, git, objects, index;
     public boolean zipToggle = false;
