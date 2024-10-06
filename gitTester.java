@@ -3,7 +3,8 @@ import java.io.IOException;
 import java.io.File;
 import java.security.NoSuchAlgorithmException;
 import java.io.FileReader;
-
+import java.util.List;
+import java.util.ArrayList;
 
 public class gitTester {
     public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
@@ -48,6 +49,10 @@ public class gitTester {
         File compressedFile = new File ("./seansTestRepo/git/objects/" + seansGit2.sha1Code("./example.txt.zip"));
         System.out.println("\n The size of the uncompressed file is: " + hashFile.length() + " bytes. The length of the compressed file is: " + compressedFile.length() + " bytes.");
         freader.close();
+        //test readIndexFile
+        // List<String> indexContents = seansGit2.readIndexFile();
+        // System.out.println("yo" + indexContents);
+        //seansGit2.commit("collin","yo yo yo");
         seansGit2 = resetTestFiles(seansGit2);
         testFolderCompatibility(seansGit2);
         seansGit2.deleteRepo();

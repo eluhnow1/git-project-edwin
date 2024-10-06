@@ -13,6 +13,15 @@ import java.util.*;
 import java.util.zip.*;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
+
 
 public class Git {
     //Collin's first commit
@@ -175,7 +184,7 @@ public class Git {
         return treeHash;
     }
 
-    
+    //get all the new versions of string from index and get all the data from the old commit
     private void updateIndexFile (File indexFile, String hash, File finalFile) throws IOException{
         FileWriter fw = new FileWriter(indexFile, true);
         String fileType = "blob";
@@ -250,4 +259,91 @@ public class Git {
         }
         return sb.toString();
     }
+
+    //reads the index file in git folder
+    public List<String> readIndexFile () throws IOException 
+    {
+        File indexFile = new File ("./" + repoName + "/git/index");
+        List<String> indexContents = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(indexFile)))
+        {
+            String line;
+            while ((line = reader.readLine()) != null)
+            {
+                indexContents.add(line);
+            }
+        }
+        return indexContents;
+    }
+    //The commit method
+    public void commit (String author, String message)throws IOException, NoSuchAlgorithmException
+    {
+        //getting the root tree hash
+        String rootTreeHash = getRootTreeHash();
+        String parentHash = getParentHash();
+        String commmitContent = generateCommitContent(rootTreeHash, parentHash, author, message);   
+        //this makes a new hash based on all 4 contents
+        String commitHash = sha1Code(commmitContent);
+
+        writeCommitFile(commitHash, commmitContent);
+        updateHead(commitHash);
+    }
+
+
+    //gets the root tree hash
+    private String getRootTreeHash() throws IOException, NoSuchAlgorithmException
+    {
+        File rootDirectory = new File("./" + repoName);
+        return makeTree(rootDirectory);
+    }
+    //gets the parent hash
+    private String getParentHash () throws IOException
+    {
+        //the head file contains the hash of the last commit
+        File headFile = new File("./" + repoName + "/git/HEAD");
+        if (!headFile.exists())
+        {
+            return null;
+        }
+        try (BufferedReader reader = new BufferedReader(new FileReader(headFile)))
+        {
+            return reader.readLine().trim();
+        }
+    }
+    //generates all data i n the commit file
+    private String generateCommitContent (String treeHash, String parentHash, String author, String message)
+    {
+        
+        StringBuilder commitContent = new StringBuilder();
+        commitContent.append("tree " + treeHash + "\n");
+        //could b the first commit
+        if (parentHash != null)
+        {
+            commitContent.append("parent " + parentHash + "\n");
+        }
+        commitContent.append("author " + author + "\n");
+        commitContent.append("message " + message + "\n");
+        return commitContent.toString();
+    }
+
+
+    private void writeCommitFile (String commitHash, String commitContent) throws IOException
+    {
+        File commitFile = new File("./" + repoName + "/git/objects/" + commitHash);
+        try (FileWriter writer = new FileWriter(commitFile))
+        {
+            writer.write(commitContent);
+        }
+    }
+    private void updateHead (String commitHash) throws IOException
+    {
+        
+        File headFile = new File("./" + repoName + "/git/HEAD");
+        //make sure the new hash is recorded in the head file
+        try (FileWriter writer = new FileWriter(headFile))
+        {
+            writer.write(commitHash);
+        }
+    }
+
 }
