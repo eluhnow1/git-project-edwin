@@ -28,6 +28,7 @@ public class Git {
     private String repoName;
     private File repo, git, objects, index;
     public boolean zipToggle = false;
+
     public Git (String repoName) throws IOException{
         this.repoName = repoName;
         repo = new File ("./" + repoName);
@@ -261,19 +262,24 @@ public class Git {
     }
 
     //reads the index file in git folder
-    public List<String> readIndexFile () throws IOException 
+    public String readIndexFile () throws IOException 
     {
         File indexFile = new File ("./" + repoName + "/git/index");
-        List<String> indexContents = new ArrayList<>();
+        String indexContents = " ";
         try (BufferedReader reader = new BufferedReader(new FileReader(indexFile)))
         {
             String line;
             while ((line = reader.readLine()) != null)
             {
-                indexContents.add(line);
+                indexContents = indexContents + line + "\n";
             }
         }
         return indexContents;
+    }
+    public static String sha1CodeStringToHash(String content) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance ("SHA-1");
+        byte[] hash = digest.digest(content.getBytes());
+        return bytesToHexString(hash);
     }
     //The commit method
     public void commit (String author, String message)throws IOException, NoSuchAlgorithmException
@@ -283,7 +289,7 @@ public class Git {
         String parentHash = getParentHash();
         String commmitContent = generateCommitContent(rootTreeHash, parentHash, author, message);   
         //this makes a new hash based on all 4 contents
-        String commitHash = sha1Code(commmitContent);
+        String commitHash = sha1CodeStringToHash(commmitContent);
 
         writeCommitFile(commitHash, commmitContent);
         updateHead(commitHash);
@@ -293,8 +299,18 @@ public class Git {
     //gets the root tree hash
     private String getRootTreeHash() throws IOException, NoSuchAlgorithmException
     {
-        File rootDirectory = new File("./" + repoName);
-        return makeTree(rootDirectory);
+        File rootDirectory = new File("git/objects" + repoName);
+        String indexContent = readIndexFile();
+        File newFile = new File ("./" + repoName + "/git/objects/" + sha1CodeStringToHash(indexContent));
+        if (!newFile.exists())
+        {
+            newFile.createNewFile();
+        }
+        try (FileWriter writer = new FileWriter (newFile))
+        {
+            writer.write (indexContent);
+        }
+        return sha1CodeStringToHash(indexContent);
     }
     //gets the parent hash
     private String getParentHash () throws IOException
