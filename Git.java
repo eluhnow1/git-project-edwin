@@ -23,7 +23,7 @@ import java.util.Objects;
 
 
 
-public class Git {
+public class Git implements GitInterface {
     //Collin's first commit
     private String repoName;
     private File repo, git, objects, index;
@@ -276,13 +276,13 @@ public class Git {
         }
         return indexContents;
     }
-    public static String sha1CodeStringToHash(String content) throws NoSuchAlgorithmException {
+    public static String sha1CodeStringToHash(String content) throws IOException, NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance ("SHA-1");
         byte[] hash = digest.digest(content.getBytes());
         return bytesToHexString(hash);
     }
     //The commit method
-    public void commit (String author, String message)throws IOException, NoSuchAlgorithmException
+    public String commit (String author, String message)throws IOException, NoSuchAlgorithmException
     {
         //getting the root tree hash
         String rootTreeHash = getRootTreeHash();
@@ -293,6 +293,7 @@ public class Git {
 
         writeCommitFile(commitHash, commmitContent);
         updateHead(commitHash);
+        return commitHash;
     }
 
 
@@ -331,15 +332,24 @@ public class Git {
     {
         
         StringBuilder commitContent = new StringBuilder();
-        commitContent.append("tree " + treeHash + "\n");
+        commitContent.append("tree: " + treeHash + "\n");
         //could b the first commit
+        commitContent.append ("parent: ");
         if (parentHash != null)
         {
-            commitContent.append("parent " + parentHash + "\n");
+            commitContent.append(" "  + parentHash);
         }
-        commitContent.append("author " + author + "\n");
-        commitContent.append("message " + message + "\n");
+        commitContent.append("\n");
+        commitContent.append("author: " + author + "\n");
+        commitContent.append("date: " + getDate() + "\n");
+        commitContent.append("message: " + message + "\n");
+        
         return commitContent.toString();
+    }
+    //gets the date
+    private String getDate()
+    {
+        return new Date().toString();
     }
 
 
@@ -361,5 +371,86 @@ public class Git {
             writer.write(commitHash);
         }
     }
+    public void stage (String filePath) throws IOException, NoSuchAlgorithmException
+    {
+        File file = new File(filePath);
+        if (file.isDirectory())
+        {
+            makeTree(file);
+        }
+        else
+        {
+            makeBlob (file);
+        }
+    }
+    // public void checkout (String commitHash) throws IOException, NoSuchAlgorithmException
+    // {
+    //     File commitFile = new File ("./" + repoName + "/git/objects/" + commitHash);
+    //     if (!commitFile.exists())
+    //     {
+    //         throw new FileNotFoundException();
+    //     }
+    //     try (BufferedReader reader = new BufferedReader(new FileReader(commitFile)))
+    //     {
+    //         String line;
+    //         while ((line = reader.readLine()) != null)
+    //         {
+    //             System.out.println(line);
+    //         }
+    //     }
+    }
 
-}
+
+    // public void stageCommits (String filePath) throws IOException, NoSuchAlgorithmException
+    // {
+    //     File file = new File(filePath);
+    //     if (!file.exists())
+    //     {
+    //         throw new FileNotFoundException();
+    //     }
+    //     if (file.isDirectory())
+    //     {
+    //         //gotta check the type of the file and then stage it 
+    //         stageFolder(file);
+    //     }
+    //     else
+    //     {
+    //         stageFile(file);
+    //     }
+    // }
+    // private void stageFolder (File folder) throws IOException, NoSuchAlgorithmException
+    // {
+    //     for (File file : Objects.requireNonNull(folder.listFiles()))
+    //     {
+    //         if (file.isDirectory())
+    //         {
+    //             stageFolder(file);
+    //             String hash = sha1Code(file.
+    //             writeIndexEntry("tree", hash, file.getPath());
+    //         }
+    //         else
+    //         {
+    //             stageFile(file);
+    //         }
+    //     }
+
+        
+
+
+    // }
+    // private void stageFile (File file) throws IOException, NoSuchAlgorithmException
+    // {
+    //     String hash = sha1Code(file.getPath());
+    //     writeIndexEntry("blob", hash, file.getPath());
+    // }
+
+    // private void writeIndexEntry (String type, String hash, String path) throws IOException
+    // {
+       
+    //     try (FileWriter writer = new FileWriter (index, true))
+    //     {
+    //         writer.write(type + " " + hash + " " + path + "\n");
+    //         writer.close();
+    //     }
+    // }
+

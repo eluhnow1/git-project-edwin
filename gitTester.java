@@ -51,17 +51,54 @@ public class gitTester {
         // freader.close();
         //test readIndexFile
         
-        
-        File example = new File ("./example.txt");
-        Git seansGit2 = new Git("seansTestRepo");
-        String indexContents = seansGit2.readIndexFile();
-        System.out.println("yo" + indexContents);
-        seansGit2.makeBlob(example);
 
-        seansGit2.commit("collin","yo yo yo");
-        //seansGit2 = resetTestFiles(seansGit2);
-    //     testFolderCompatibility(seansGit2);
-        //seansGit2.deleteRepo();
+
+
+
+
+
+
+    
+            //initialize git
+            Git seansGit2 = new Git("seansTestRepo");
+
+            // Test readIndexFile
+            // String indexContents = seansGit2.readIndexFile();
+            // System.out.println(indexContents);
+
+
+            //Testing commit method with a file
+            File example = new File ("./example.txt");
+            seansGit2.makeBlob(example);
+            seansGit2.commit("sean","yo yo yo");
+
+
+            // test with folder now
+            File testFolder = new File ("./testFolder");
+            seansGit2.makeTree(testFolder);
+            seansGit2.commit("collin","yo yo yo");
+
+            // test stageCommits
+            //with file
+            //File example = new File ("./example.txt");
+            seansGit2.stage("./example.txt");
+            //now with folder
+            File newFile = new File ("./testFolder");
+            if (!newFile.exists()){
+                System.out.println("File doesnt exists");
+            }
+            else{
+                seansGit2.stage("./testFolder");
+
+            }
+
+            // test checkout
+            //seansGit2.checkout("commitHash");
+
+
+            seansGit2 = resetTestFiles(seansGit2);
+            testFolderCompatibility(seansGit2);
+            seansGit2.deleteRepo();
     }
     public static Git resetTestFiles (Git git) throws IOException{
         git.deleteRepo();
